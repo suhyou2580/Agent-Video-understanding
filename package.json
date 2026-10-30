@@ -1,0 +1,45 @@
+{
+  "name": "@local/video-understanding",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH 视频理解插件：GIF / 本地视频 / B站视频 → 带时间戳的关键帧与事件时间线（完全复用 ffmpeg + DeepSeek 原生视觉，不引入第二套运行时）",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "main": "./src/service.js",
+  "exports": {
+    ".": "./src/service.js",
+    "./probe": "./src/probe.js",
+    "./frames": "./src/frames.js",
+    "./sampling": "./src/sampling.js",
+    "./events": "./src/events.js",
+    "./bilibili": "./src/adapters/bilibili.js",
+    "./memory-bridge": "./src/memory-bridge.js",
+    "./mcp-tools": "./src/mcp-tools.js",
+    "./config": "./src/config.js",
+    "./package.json": "./package.json"
+  },
+  "meta": {
+    "title": "视频理解",
+    "description": "把 GIF / 本地视频 / B站视频变成带时间戳、可追问、可核验的帧证据与事件时间线。"
+  },
+  "files": [
+    "src/*.js",
+    "src/adapters/*.js",
+    "migrations/*.sql",
+    "config.example.json",
+    "README.md",
+    "docs/*.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "test:live": "node tests/live/bilibili.live.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "integrate:check": "node scripts/integrate-bridge.mjs --check",
+    "integrate:apply": "node scripts/integrate-bridge.mjs --apply",
+    "integrate:remove": "node scripts/integrate-bridge.mjs --remove",
+    "verify": "node scripts/verify-mcp.mjs --selftest"
+  }
+}

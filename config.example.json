@@ -1,0 +1,41 @@
+{
+  "_comment": "复制为 config.json 生效。所有字段可省略（缺省见 src/config.js 的 DEFAULT_CONFIG）。路径相对本插件目录。",
+
+  "enabled": true,
+  "ffmpegPath": "",
+  "ffprobePath": "",
+  "workDir": "data",
+  "tempRetentionMinutes": 120,
+
+  "limits": {
+    "maxBytes": 524288000,
+    "maxDurationSec": 1800,
+    "maxFrames": 16,
+    "defaultFrames": 6,
+    "frameMaxWidth": 0,
+    "jpegQuality": 4,
+    "maxFramePixels": 2073600
+  },
+
+  "timeouts": {
+    "probeMs": 20000,
+    "remoteProbeMs": 45000,
+    "extractMs": 60000,
+    "sceneDetectMs": 90000
+  },
+
+  "sampling": {
+    "sceneDetect": true,
+    "sceneThreshold": 0.3,
+    "alwaysIncludeFirstLast": true,
+    "sceneDetectMaxDurationSec": 600,
+    "focusPaddingMs": 2000
+  },
+
+  "cost": {
+    "estimateTokens": true,
+    "maxImageTokens": 4000
+  },
+
+  "allowedLocalExtensions": [".gif", ".mp4", ".webm", ".mkv", ".mov", ".avi", ".m4v", ".mp3", ".m4a", ".wav", ".flac"]
+}

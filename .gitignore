@@ -1,0 +1,19 @@
+node_modules/
+
+# 运行时数据：本地数据库、抽帧缓存、日志（不随仓库分发）
+data/
+*.db
+*.db-wal
+*.db-shm
+frames/
+tmp/
+logs/
+
+# 真实配置（含本机路径/密钥）；仓库只保留 config.example.json
+config.json
+.env
+
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+*.log
