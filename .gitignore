@@ -17,3 +17,4 @@ config.json
 .DS_Store
 Thumbs.db
 *.log
+.commit-msg.txt
