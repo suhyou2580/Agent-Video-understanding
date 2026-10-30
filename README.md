@@ -1,13 +1,14 @@
 # 视频理解插件（video-understanding）
 
-把 **GIF / 本地视频 / B 站视频** 变成**带时间戳、可追问、可核验**的帧证据与事件时间线，
-挂到 QQ Agent（SnowLuma + qq-bridge + DSH）现有的 MCP 工具面上。
+把 **GIF / 本地视频 / B 站视频** 变成**带时间戳、可追问、可核验**的帧证据与事件时间线。
+本质上是一个**独立 MCP server**：可以挂到 QQ Agent（SnowLuma + qq-bridge + DSH）现有的 MCP 工具面上，
+也可以被任何 MCP 客户端直接托管（见 §2.4）。
 
 - **不引第二套运行时**：纯 Node + 系统 ffmpeg，零 Python 依赖。
 - **不买视觉 API**：帧以图片内容块交给当前会话的模型（DeepSeek 原生支持图片输入）。
 - **不伪造能力**：拿不到媒体就返回 `ACCESS_FAILED` / `METADATA_ONLY`，绝不假装看过。
 
-环境勘察与可行性数据见 [../DSH_视频理解_资源盘点与可行性核查.md](../DSH_视频理解_资源盘点与可行性核查.md)。
+> 设计阶段的可行性核查与成本实测已并入本文 §4 / §5，原始内部讨论稿不随仓库发布。
 
 ---
 
@@ -53,7 +54,7 @@
 
 ### 2.1 前置
 
-| 项 | 要求 | 本机实测 |
+| 项 | 要求 | 作者环境实测 |
 |---|---|---|
 | Node.js | ≥ 22.5（`node:sqlite`） | v24.22.0 ✅ |
 | FFmpeg + ffprobe | 在 PATH，或配置 `ffmpegPath`/`ffprobePath` | ffmpeg 9.0.2-full ✅ |
@@ -74,19 +75,41 @@ node scripts/integrate-bridge.mjs --apply
 # ③ 真实验证（stdio 握手 + 真抽一帧）
 node scripts/verify-mcp.mjs --selftest
 
-# 重启桥接，让 QQ 会话拿到新工具
-D:\qq-bridge\restart.bat
+# 重启桥接，让 QQ 会话拿到新工具（在 qq-bridge 目录下）
+restart.bat
 ```
 
 **为什么挂 MCP**：QQ 会话有执行期工具白名单，只放行
-`mcp__snowluma__ / mcp__snowluma-host__ / mcp__web-search-safe__ / mcp__phone__`。
-挂到 `snowluma-host` 上得到 `mcp__snowluma-host__video_*`，正好在白名单内，
+`mcp__snowluma__ / mcp__snowluma-host__ / mcp__pc-browser__ / mcp__web-search-safe__`。
+挂到 `snowluma-host` 上得到 `mcp__snowluma-host__video_*`，正好落在白名单内，
 且**不改动任何 QQ agent 机制**（唤醒、分条、提示词、白名单全都不动）。
 
 ### 2.3 回滚
 
 ```powershell
 node scripts/integrate-bridge.mjs --remove   # 撤掉工具（数据库与临时文件保留）
+```
+
+### 2.4 三种接入方式
+
+| 方式 | 怎么做 | 结果 |
+|---|---|---|
+| **挂到既有 MCP server**（推荐） | `node scripts/integrate-bridge.mjs --apply` | 工具名成为 `mcp__snowluma-host__video_*`，落在 QQ 白名单内 |
+| **自己托管 MCP server** | `registerVideoTools(server)`（`src/mcp-tools.js`） | 任意 MCP 客户端可用；不依赖 QQ / DSH |
+| **DSH Web 原生工具** | **未实现**（需要 schemastery 可解析，见 §5.6） | — |
+
+MCP 只是外壳，能力都在 `src/service.js`：
+
+```js
+import { createVideoService } from './src/service.js';
+const svc = createVideoService();
+await svc.probeSource({ target });            // 探测：拿得到吗、什么能力
+await svc.analyze({ target, count: 6 });      // 抽帧（返回帧图 + 时间戳清单）
+svc.saveEvents(task_id, events);              // 落时间线（紧凑格式）
+svc.queryEvents({ taskId, fromMs, toMs, kind });   // 过滤字段用 camelCase
+svc.timeline(task_id);                        // 回读时间线与帧清单
+svc.stats();                                  // 成本与失败率
+svc.pruneTemp();                              // 按保留期清理第一层
 ```
 
 ---
@@ -104,6 +127,12 @@ node scripts/integrate-bridge.mjs --remove   # 撤掉工具（数据库与临时
 | `video_remember` | 否 | 写入长期记忆（**只写标了 `w:1` 的事件**） |
 | `video_stats` | 否 | 成本与失败率统计（帧数/图片 token/缓存命中/失败率） |
 | `video_doctor` | 否 | 自检：ffmpeg 版本、库健康、配置上限 |
+
+**返回里最重要的三个字段**：`access_status`（真实能力，决定能不能谈画面）、
+`coverage`（采样覆盖：`covers_full_duration`、相邻采样点最大间隔、共 N 帧只看 M 帧、
+`frame_count`）、`task_id`（后续精读 / 存事件 / 回查的句柄）。
+`access_status` 为 `METADATA_ONLY` / `ACCESS_FAILED` 时，返回会显式要求模型只谈标题与简介、
+**不许描述画面**（§5.2）。
 
 典型用法（模型侧）：
 
@@ -437,3 +466,9 @@ video-understanding/
 ├── scripts/  integrate-bridge / verify-mcp / doctor
 └── tests/    unit / integration / live / fixtures
 ```
+
+---
+
+## 9. 许可
+
+MIT，见 [LICENSE](LICENSE)。

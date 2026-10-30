@@ -1,0 +1,8 @@
+* text=auto eol=lf
+
+# 二进制：别做换行转换/文本 diff
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.gif  binary
+*.db   binary
